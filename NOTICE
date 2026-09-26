@@ -1,0 +1,37 @@
+go-images/png
+
+This product includes software developed by The Go Authors
+(https://go.dev, package image/png), licensed under the BSD 3-Clause
+licence reproduced in LICENSE. Copyright 2009 The Go Authors.
+
+This is a fork. The changes carried here are stated:
+
+  2026-09-26  DecodePartial reports what a truncated stream did decode.
+
+              Decode is all-or-nothing: a file still arriving yields a nil
+              image and "not enough pixel data" whatever fraction of it is
+              present, which is the same as having nothing. Measured on a
+              real 29 KB picture cut at four fractions, the standard decoder
+              returned nothing every time. image/jpeg and image/gif answer
+              the same way, so this is a gap in the shape of every decoder
+              rather than in one of them.
+
+              DecodePartial returns the image at its full declared size
+              together with the number of pixel rows that are FINISHED,
+              counting from the top.
+
+              readImagePass already decodes row by row into the image and
+              then discards it when io.ReadFull runs out of bytes. The
+              change keeps it: at that point the rows above y are complete,
+              y itself is the row whose bytes ran out, and claiming y would
+              hand a caller a band of unfiltered noise. An INTERLACED image
+              records nothing, because an Adam7 pass covers a subset of the
+              whole frame and "rows from the top" describes nothing about
+              it; DecodePartial then refuses it with a nil image.
+
+              Decode's body moved into a decodeStream method so that
+              DecodePartial runs the same decode rather than a second copy
+              of the same loop. Decode, DecodeConfig and Encode behave
+              exactly as before, and Go's own test suite passes here
+              unaltered apart from the testdata path in the fuzz seed and
+              the import path in the example.
